@@ -53,11 +53,6 @@ spec:
             - name: SERVER_URL
               value: {{ include "twenty.serverUrl" . | quote }}
             {{- if eq (include "twenty.db.useExternalSecret" .) "true" }}
-            - name: DB_PASSWORD
-              valueFrom:
-                secretKeyRef:
-                  name: {{ include "twenty.dbPassword.secretName" . }}
-                  key: {{ include "twenty.dbPassword.secretKey" . }}
             - name: PG_DATABASE_URL
               value: {{ include "twenty.dbUrl.template" . | quote }}
             {{- else }}

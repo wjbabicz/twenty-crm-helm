@@ -79,13 +79,23 @@ password
 {{/* Database URL template for external secret (will be evaluated at runtime) */}}
 {{- define "twenty.dbUrl.template" -}}
 {{- if eq (include "twenty.db.useExternalSecret" .) "true" -}}
+{{- if .Values.db.external.host -}}
 {{- $scheme := "postgres" -}}
 {{- $host := .Values.db.external.host -}}
 {{- $port := .Values.db.external.port | default 5432 -}}
 {{- $user := .Values.db.external.user | default "postgres" -}}
 {{- $db := .Values.db.external.database | default "twenty" -}}
 {{- $qs := ternary "?sslmode=require" "" (eq .Values.db.external.ssl true) -}}
-{{- printf "%s://%s:$(DB_PASSWORD)@%s:%v/%s%s" $scheme $user $host $port $db $qs -}}
+{{- $secret := lookup "v1" "Secret" (include "twenty.namespace" .) .Values.db.external.secretName -}}
+{{- if $secret -}}
+{{- $pass := index $secret.data .Values.db.external.passwordKey | b64dec -}}
+{{- printf "%s://%s:%s@%s:%v/%s%s" $scheme (urlquery $user) (urlquery $pass) $host $port $db $qs -}}
+{{- else -}}
+{{- fail (printf "External database secret '%s' not found in namespace '%s'" .Values.db.external.secretName (include "twenty.namespace" .)) -}}
+{{- end -}}
+{{- else -}}
+{{- fail "Database error: db.external.host is required when using external database with secretName" -}}
+{{- end -}}
 {{- end -}}
 {{- end -}}
 
